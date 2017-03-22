@@ -1,14 +1,66 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <vector>
 
 #define WIDE 800
-#define HIGH 600
+#define HIGH 640
 
 #define TILESIZE 32
+
+bool testColl(sf::Sprite a, sf::Sprite b)
+{
+  return a.getGlobalBounds().intersects(b.getGlobalBounds());
+}
+
+bool testWallColl(sf::Sprite a, std::vector<sf::Sprite> walls)
+{
+  for(int i=0; i<walls.size(); i++)
+  {
+    if(a.getGlobalBounds().intersects(walls[i].getGlobalBounds()))
+    {
+      return true;
+    }
+  }
+  return false;
+}
 
 int main()
 {
   sf::RenderWindow window(sf::VideoMode(WIDE,HIGH),"Adventure!");
+
+  int tileW = WIDE/TILESIZE;
+  int tileH = HIGH/TILESIZE;
+
+  std::vector<std::vector<bool> > map;
+
+  for(int i=0; i<tileH; i++)
+  {
+    std::vector<bool> temp;
+    for(int j=0; j<tileW; j++)
+    {
+      temp.push_back(false);
+    }
+    map.push_back(temp);
+  }
+
+  map[12][3] = true;
+  map[4][6] = true;
+
+  for(int i=0; i<map.size(); i++)
+  {
+    for(int j=0; j<map[i].size(); j++)
+    {
+      if(map[i][j] == true)
+      {
+        std::cout << '0';
+      }
+      else
+      {
+        std::cout << ' ';
+      }
+    }
+    std::cout << std::endl;
+  }
 
   sf::Texture enemy_texture;
   if(!enemy_texture.loadFromFile("assets/greenblob.png"))
@@ -45,10 +97,31 @@ int main()
     std::cout << "Error loading wall texture!" << std::endl;
   }
 
-  sf::Sprite wall;
-  wall.setTexture(wall_texture);
-  wall.setScale(sf::Vector2f(2,2));
-  wall.setPosition(100,100);
+  std::vector<sf::Sprite> wallArr;
+  for(int i=0; i<map.size(); i++)
+  {
+    for(int j=0; j<map[i].size(); j++)
+    {
+      if(map[i][j] == true)
+      {
+        sf::Sprite temp;
+        temp.setTexture(wall_texture);
+        temp.setScale(sf::Vector2f(2,2));
+        temp.setPosition(j*TILESIZE,i*TILESIZE);
+        wallArr.push_back(temp);
+      }
+    }
+  }
+
+  sf::Texture grass_texture;
+  if(!grass_texture.loadFromFile("assets/grass.png"))
+  {
+    std::cout << "Error loading grass texture!" << std::endl;
+  }
+
+  sf::Sprite grass;
+  grass.setTexture(grass_texture);
+  grass.setScale(sf::Vector2f(2,2));
 
   int enemyDirection = 0;
 
@@ -74,7 +147,7 @@ int main()
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && hero.getPosition().y > 0)
     {
       hero.move(0,-heroSpeed);
-      if(hero.getGlobalBounds().intersects(wall.getGlobalBounds()))
+      if(testWallColl(hero, wallArr))
       {
         hero.move(0,heroSpeed);
       }
@@ -82,7 +155,7 @@ int main()
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && hero.getPosition().y < HIGH-TILESIZE)
     {
       hero.move(0,heroSpeed);
-      if(hero.getGlobalBounds().intersects(wall.getGlobalBounds()))
+      if(testWallColl(hero, wallArr))
       {
         hero.move(0,-heroSpeed);
       }
@@ -90,7 +163,7 @@ int main()
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && hero.getPosition().x < WIDE-TILESIZE)
     {
       hero.move(heroSpeed,0);
-      if(hero.getGlobalBounds().intersects(wall.getGlobalBounds()))
+      if(testWallColl(hero, wallArr))
       {
         hero.move(-heroSpeed,0);
       }
@@ -98,7 +171,7 @@ int main()
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && hero.getPosition().x > 0)
     {
       hero.move(-heroSpeed,0);
-      if(hero.getGlobalBounds().intersects(wall.getGlobalBounds()))
+      if(testWallColl(hero, wallArr))
       {
         hero.move(heroSpeed,0);
       }
@@ -140,8 +213,20 @@ int main()
     }
 
     //render - This is Max
+    for(int i=0; i<tileH ; i++)
+    {
+      for(int j=0; j<tileW ; j++)
+      {
+        grass.setPosition(j*TILESIZE, i*TILESIZE);
+        window.draw(grass);
+      }
+    }
+
     window.draw(enemy);
-    window.draw(wall);
+    for(int i=0; i<wallArr.size(); i++)
+    {
+      window.draw(wallArr[i]);
+    }
     window.draw(hero);
     window.draw(livesDisp);
     window.display();
