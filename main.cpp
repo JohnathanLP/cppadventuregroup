@@ -2,6 +2,7 @@
 #include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #define WIDE 800
 #define HIGH 640
@@ -48,6 +49,17 @@ int main()
   map[4][6] = true;
   map[0][6] = true;
 
+  for(int i=0; i<tileH; i++)
+  {
+    map[i][0] = true;
+    map[i][tileW-1] = true;
+  }
+  for(int i=0; i<tileW; i++)
+  {
+    map[0][i] = true;
+    map[tileH-1][i] = true;
+  }
+
   for(int i=0; i<map.size(); i++)
   {
     for(int j=0; j<map[i].size(); j++)
@@ -72,6 +84,15 @@ int main()
   sf::Sprite enemy;
   enemy.setTexture(enemy_texture);
   enemy.setScale(sf::Vector2f(2,2));
+
+  sf::Texture homing_enemy_texture;
+  if(!homing_enemy_texture.loadFromFile("assets/redblob.png"))
+  {
+    std::cout << "Error loading enemy texture!" << std::endl;
+  }
+  sf::Sprite homing_enemy;
+  homing_enemy.setTexture(homing_enemy_texture);
+  homing_enemy.setScale(sf::Vector2f(2,2));
 
   sf::Font font;
   if(!font.loadFromFile("assets/ARCADECLASSIC.TTF"))
@@ -133,14 +154,34 @@ int main()
 
   sf::Sound grunt;
   grunt.setBuffer(grunt_buffer);
-  grunt.setPitch(.8);
+  grunt.setPitch(.8 );
+
+  sf::SoundBuffer music_buffer;
+  if(!music_buffer.loadFromFile("assets/Lolita Compiex.wav"))
+  {
+    std::cout << "Error loading music file!" << std::endl;
+  }
+
+  sf::Sound music;
+  music.setBuffer(music_buffer);
+  music.setLoop(true);
 
   int enemyDirection = 0;
 
   int heroSpeed = 1;
 
+  double homingX = 0.5;
+  double homingY = 0.5;
+  double homingDist = 0;
+
   int lives = 10;
   bool takingDamage = false;
+
+  hero.setPosition(TILESIZE*2, TILESIZE*2);
+  enemy.setPosition(TILESIZE*4, TILESIZE*4);
+  homing_enemy.setPosition(TILESIZE*6, TILESIZE*6);
+
+  //music.play();
 
   //Game Loop
   while(window.isOpen())
@@ -189,7 +230,7 @@ int main()
       }
     }
 
-    if(hero.getGlobalBounds().intersects(enemy.getGlobalBounds()))
+    if(testColl(hero, enemy) || testColl(hero, homing_enemy))
     {
       if(takingDamage == false)
       {
@@ -236,6 +277,12 @@ int main()
       }
     }
 
+    homingDist = sqrt(pow(hero.getPosition().x - homing_enemy.getPosition().x, 2) +
+          pow(hero.getPosition().y - homing_enemy.getPosition().y, 2));
+    homingX = (hero.getPosition().x - homing_enemy.getPosition().x)/homingDist;
+    homingY = (hero.getPosition().y - homing_enemy.getPosition().y)/homingDist;
+    homing_enemy.move(homingX/2, homingY/2);
+
     //render - This is Max
     for(int i=0; i<tileH ; i++)
     {
@@ -247,6 +294,7 @@ int main()
     }
 
     window.draw(enemy);
+    window.draw(homing_enemy);
     for(int i=0; i<wallArr.size(); i++)
     {
       window.draw(wallArr[i]);
