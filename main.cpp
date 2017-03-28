@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <iostream>
 #include <vector>
 
@@ -45,6 +46,7 @@ int main()
 
   map[12][3] = true;
   map[4][6] = true;
+  map[0][6] = true;
 
   for(int i=0; i<map.size(); i++)
   {
@@ -123,6 +125,16 @@ int main()
   grass.setTexture(grass_texture);
   grass.setScale(sf::Vector2f(2,2));
 
+  sf::SoundBuffer grunt_buffer;
+  if(!grunt_buffer.loadFromFile("assets/grunt.wav"))
+  {
+    std::cout << "Error loading grunt sound!" << std::endl;
+  }
+
+  sf::Sound grunt;
+  grunt.setBuffer(grunt_buffer);
+  grunt.setPitch(.8);
+
   int enemyDirection = 0;
 
   int heroSpeed = 1;
@@ -182,6 +194,7 @@ int main()
       if(takingDamage == false)
       {
         lives--;
+        grunt.play();
         takingDamage = true;
       }
     }
@@ -210,6 +223,17 @@ int main()
     if(enemy.getPosition().x < 0)
     {
       enemyDirection = 0;
+    }
+    if(testWallColl(enemy, wallArr))
+    {
+      if(enemyDirection == 0)
+      {
+        enemyDirection = 1;
+      }
+      else
+      {
+        enemyDirection = 0;
+      }
     }
 
     //render - This is Max
